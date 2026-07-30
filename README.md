@@ -1,6 +1,7 @@
 # UAM-GUI-APP-ALBUM
 This repo exists to show my work while the source is still private. It documents a
 VLM-powered vision pipeline I built over summer 2026 at SFU's RAMP Lab.
+[Here](github.com) is a video demo of the full stack system. 
 
 ## What it is
 A ROS 1 pipeline that turns a stereo camera feed into something you can ask questions
@@ -9,6 +10,7 @@ produces structured object detections, and an orchestrator packages those detect
 into context for a vision-language model. You type a question, the VLM answers it
 grounded in what the robot is actually looking at.
 
+### perception pipline:
 ![VLM perception pipeline](concept_map.png)
 
 The design goal was modularity: perception, orchestration, and inference
@@ -20,12 +22,13 @@ swapped without touching the detection stack.
 Let us dive into each component of the pipeline.
 
 ### Eagle Wrapper Node 
+![Eagle Wrapper Demo](eagle/eagle_demo.png)
 
 The first component is the Eagle 2.5 VLM wrapper. Eagle 2.5 is NVIDIA's vision-language
 model family built for embodied AI, so it handles multi-image and spatial reasoning
 better than a general-purpose captioning model.
 
-![Eagle Wrapper Concept Map](eagle_concept_map.png)
+![Eagle Wrapper Concept Map](eagle/eagle_concept_map.png)
 
 The wrapper is split into two scripts:
 
