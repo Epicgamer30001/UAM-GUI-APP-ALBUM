@@ -17,7 +17,7 @@ swapped without touching the detection stack.
 
 
 ## Components
-Lets dive into each component of the pipeline.
+Let us dive into each component of the pipeline.
 
 ### Eagle Wrapper Node 
 
@@ -30,12 +30,32 @@ better than a general-purpose captioning model.
 The wrapper is split into two scripts:
 
 **`eagle2_5_node.py`** (server) -- loads the model weights into GPU memory once at
-  startup and advertises the `vlm/query` service. Model loading takes multiple seconds, so
-  keeping it loaded is the whole point of a persistent node rather than a subprocess
-  per query. Once a service is requested,, the corresponding json message is corresponded and the VLM is queried. The result is then returned back to the client, and published to   `vlm/answer`. 
+startup and advertises the `vlm/query` service. Loading takes several seconds, which is
+the whole reason this is a persistent node rather than a subprocess spawned per query.
+On each request the node parses the incoming fields, runs inference, returns the answer
+string to the caller, and publishes the same result on `vlm/answer` for any other node
+that wants to listen.
 
 
+**`vlm_client_node.py`** (client) -- subscribes to `vlm/request`, packs the message into
+a `vlm/query` service request, and calls the server. 
 
-**`vlm_client_node.py`** (client) -- subscribes to `vlm/request`, calls `vlm/query`,
-  and republishes the result on `vlm/answer`. Isolating the blocking service call here
-  means inference latency never stalls the rest of the graph.
+**vlm/query custom message**
+| Field | Type | Purpose |
+|---|---|---|
+| `images` | `sensor_msgs/Image[]` | Frames passed inline, typically straight off the ZED |
+| `image_paths` | `string[]` | Alternative to `images`, loads from disk instead |
+| `prompt` | `string` | The assembled prompt from the orchestrator |
+| `media_type` | `string` | Selects the input mode: `[text/image/multi_image/video]` |
+| `id` | `uint32` | Correlates a response with its request (optional) |
+
+#### Architectural decisions
+
+**`vlm/answer` is published by the server, not the client.** Requests can arrive two ways:
+via the `vlm/request` topic, or by calling `vlm/query` directly. Publishing from the server
+means `vlm/answer` catches both. Publishing from the client would miss direct service calls.
+
+**The blocking call lives in its own node.** ROS 1 service calls are synchronous, and VLM
+inference takes multiple seconds. Confining that call to `vlm_client_node.py` means only it stalls
+`detection_node.py` and `orchestrator_node.py` are separate processes and keep spinning.
+
