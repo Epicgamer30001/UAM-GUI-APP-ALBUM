@@ -72,8 +72,7 @@ the scene that a language model can reason over.
 
 Provided by StereoLabs as part of the [ZED ROS wrapper](https://www.stereolabs.com/docs/ros/).
 The camera computes depth on-board via stereo matching, and the wrapper republishes it as
-standard ROS topics. Nothing in this repo touches the SDK directly -- the driver is
-launched from `[launch file]` and everything downstream just subscribes.
+standard ROS topics.
 
 The three topics that matter here:
 
@@ -81,26 +80,28 @@ The three topics that matter here:
 |---|---|---|
 | `rgb/image_rect_color` | `sensor_msgs/Image` | Rectified colour frames |
 | `depth/depth_registered` | `sensor_msgs/Image` | Per-pixel depth, pixel-aligned to the RGB frame |
-| `rgb/camera_info` | `sensor_msgs/CameraInfo` | Intrinsics |
+| `rgb/camera_info` | `sensor_msgs/CameraInfo` | Camera intrinsics |
 
 Registered depth is the important one: because it shares a frame with the colour image, a
 pixel in a detection box maps directly to a depth reading with no extra transform.
 
+[object_detection_concept_map](object_detection/object_detection_concept_map.png)
+
 #### `detection_node.py`
 
-Runs [YOLO variant] on each RGB frame to get 2D boxes, then lifts each box into 3D. For a
-given box it samples the depth image over the box region, takes [the median? centroid?] to
-reject outliers, and back-projects through the camera intrinsics to get a position in
-`[frame_id]`. Output runs at roughly [N] Hz on [GPU].
+Runs YOLO26x on each RGB frame to get 2D bounding boxes, then lifts each box into 3D. For
+each box it samples the registered depth image over the box region and back-projects
+through the camera intrinsics to get a 3D position, taking the interquartile range of the
+depth readings as the object's depth (dz). Runs at roughly 15 Hz on an RTX 4090.
 
 Publishes:
 
 | Topic | Type | Purpose |
 |---|---|---|
-| `object_detection/detections` | `[vision_msgs/Detection3DArray?]` | Structured detections for downstream nodes |
-| `object_detection/detections_json` | `std_msgs/String` | Same content serialized for the orchestrator |
+| `object_detection/detections` | `[vision_msgs/Detection3DArray]` | Structured 3D detections for other nodes |
+| `object_detection/detections_json` | `std_msgs/String` | Bounding boxes in a json format (feeds into VLM) |
 | `object_detection/scene` | `[type]` | [What this carries beyond detections] |
-| `object_detection/image` | `sensor_msgs/Image` | Annotated frame for RViz |
+| `object_detection/image` | `sensor_msgs/Image` | Raw frame + 2d bounding boxes drawn with Opencv |
 | `object_detection/markers` | `visualization_msgs/MarkerArray` | 3D boxes for RViz |
 
 #### `orchestrator_node.py`
