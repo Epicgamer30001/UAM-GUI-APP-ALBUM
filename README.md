@@ -1,7 +1,16 @@
 # UAM-GUI-APP-ALBUM
 This repo exists to show my work while the source is still private. It documents a
-VLM-powered vision pipeline I built over summer 2026 at SFU's RAMP Lab.
-[Here](github.com) is a video demo of the full stack system. 
+VLM-powered perception/motion planning pipeline I built over summer 2026 at SFU's RAMP Lab.
+[Here](github.com) is a video demo of the full stack system.
+
+Below is the system that we have at the RAMP lab. 
+![UAM](uam_gazebo.png)
+
+- **AureliaX6 Pro (UAM Platform)** -- hexacopter airframe that carries the rest of the system
+- **Open-Manipulator-X (4 DOF Arm)** -- robotic arm mounted underneath the hexacopter
+- **Gripper (End Effector)** -- two-fingered gripper at the end of the arm
+- **ETH Camera (Eye-to-Hand)** -- fixed camera on the body, viewing the arm/workspace from outside
+- **EIH Camera (Eye-in-Hand)** -- camera mounted near the gripper, co-moving with it for closed-loop manipulation
 
 ## What it is
 A ROS 1 pipeline that turns a stereo camera feed into something you can ask questions
@@ -25,6 +34,7 @@ Let us dive into each component of the pipeline.
 The first component is the Eagle 2.5 VLM wrapper. Eagle 2.5 is NVIDIA's vision-language
 model family built for embodied AI, so it handles multi-image and spatial reasoning
 better than a general-purpose captioning model.
+This wrapper allows a user or any node to publish a question with images, and then get the answer by sucribering to another topic. 
 ![Eagle Wrapper Demo](eagle/eagle_demo.png)
 
 ![Eagle Wrapper Concept Map](eagle/eagle_concept_map.png)
@@ -85,7 +95,8 @@ The three topics that matter here:
 Registered depth is the important one: because it shares a frame with the colour image, a
 pixel in a detection box maps directly to a depth reading with no extra transform.
 
-[object_detection_concept_map](object_detection/object_detection_concept_map.png)
+![object_detection_concept_map](object_detection/object_detection_concept_map.png)
+![rviz_detection](object_detection/rviz_detections.png)
 
 #### `detection_node.py`
 
@@ -108,8 +119,7 @@ Publishes:
 
 The glue between perception and inference. It holds the most recent scene state from
 `detections_json` and `scene`, and waits on `vlm/question` for user input. When a question
-arrives it builds a prompt combining the question with the current detections -- object
-labels, positions, [confidences?] -- and publishes it on `vlm/request` along with the
+arrives it builds a prompt combining the question with the current detections and publishes it on `vlm/request` along with the
 frame the answer should be grounded in.
 
 This is what makes answers scene-specific rather than generic captioning. The model is not
