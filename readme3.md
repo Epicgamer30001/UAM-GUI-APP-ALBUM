@@ -2,7 +2,7 @@
 
 *RAMP Lab, Simon Fraser University · Summer 2026*
 
-At SFU's [RAMP Lab](https://www.ramplab.ca/), I've been building the new perception and motion planning stack for aerial object retrieval, powered by NVIDIA's Eagle 2.5 VLM and Ultralytics' YOLO26x. Most recently I've been wrapping all of it into a GUI app, so the same interface drives the system in simulation and on real hardware.
+At SFU's [RAMP Lab](https://www.ramplab.ca/), I've been building the new perception and motion planning stack for aerial object retrieval, powered by StereoLab's ZED cameras, NVIDIA's Eagle 2.5 VLM,Ultralytics' YOLO26x. Most recently I've been wrapping all of it into a GUI app, so the same interface drives the system in simulation and on real hardware.
 
 The source is still private, so this repo is the album.
 
@@ -27,7 +27,7 @@ The source is still private, so this repo is the album.
 - **Open-Manipulator-X (4 DOF Arm)** -- robotic arm mounted underneath the hexacopter
 - **Gripper (End Effector)** -- two-fingered gripper at the end of the arm
 - **ETH Camera (Eye-to-Hand)** -- fixed camera on the body, viewing the arm/workspace from outside
-- **EIH Camera (Eye-in-Hand)** -- camera mounted near the gripper, co-moving with it for closed-loop manipulation
+- **EIH Camera (Eye-in-Hand)** -- camera mounted directly under gripper, co-moving with it for closed-loop manipulation
 
 <!-- ASSET 3: you have this one. ETH and EIH views of the same instant,
      side by side. Makes the distinction obvious in one glance. -->
@@ -47,7 +47,7 @@ The source is still private, so this repo is the album.
 
 **Perception.** ZED stereo feeds YOLO26x, whose 2D bounding boxes get lifted into 3D against the registered depth map, and the result is packaged as scene context that a VLM can answer questions about.
 
-**Motion planning.** Behavior tree communicates with the perception stack and issues commands to the high-level controller, originally authored by [Mohammad Soltanshah](https://msoltanshah.github.io/) and later redesigned by me, which in turn drives the low-level controller. That bottom layer is Abolfazl Eskandarpour's [MPC](https://www.researchgate.net/publication/364582025_A_Constrained_Robust_Switching_MPC_Structure_for_Tilt-Rotor_UAVs_Trajectory_Tracking_Problem), which handles the coupled arm-rotor dynamics and sends the actual rotor and arm commands to the vehicle.
+**Motion planning.** Behavior tree communicates with the perception stack and issues commands to the high-level controller, originally authored by [Mohammad Soltanshah](https://msoltanshah.github.io/)(my supervisor!) and later redesigned by me, which in turn drives the low-level controller. That bottom layer is Abolfazl Eskandarpour's [MPC](https://www.researchgate.net/publication/364582025_A_Constrained_Robust_Switching_MPC_Structure_for_Tilt-Rotor_UAVs_Trajectory_Tracking_Problem), which handles the coupled arm-rotor dynamics and sends the actual rotor and arm commands to the vehicle.
 
 **GUI.** This is a tabbed user interface wrapping all of the above, with both camera feeds, a chatbot-style VLM query interface, and live arm control, running against simulation and hardware through the same interface.
 
