@@ -53,6 +53,8 @@ The source is still private, so this repo is the album.
 
 Motion Planning and the GUI app is currently in progress.
 
+![System architecture](full_concept_map.png)
+
 # Under the hood
 
 ## Perception
