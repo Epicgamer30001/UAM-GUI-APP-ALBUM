@@ -21,17 +21,20 @@ The source is still private, so this repo is the album.
 <!-- ASSET 2: the real hardware photo, not Gazebo. Gazebo moves to the sim
      section. If the arm and both cameras are visible, add labelled arrows
      matching the table. -->
-![UAM platform](uam_gazebo.png)
+<!-- ASSET 3: you have this one. ETH and EIH views of the same instant,
+     side by side. Makes the distinction obvious in one glance. -->
+<table>
+<tr>
+<td><img src="uam_gazebo.png" width="400" alt="UAM platform"></td>
+<td><img src="real_uam.png" width="400" alt="ETH and EIH views"></td>
+</tr>
+</table>
 
 - **AureliaX6 Pro (UAM Platform)** -- hexacopter airframe that carries the rest of the system
 - **Open-Manipulator-X (4 DOF Arm)** -- robotic arm mounted underneath the hexacopter
 - **Gripper (End Effector)** -- two-fingered gripper at the end of the arm
 - **ETH Camera (Eye-to-Hand)** -- fixed camera on the body, viewing the arm/workspace from outside
 - **EIH Camera (Eye-in-Hand)** -- camera mounted directly under gripper, co-moving with it for closed-loop manipulation
-
-<!-- ASSET 3: you have this one. ETH and EIH views of the same instant,
-     side by side. Makes the distinction obvious in one glance. -->
-![ETH and EIH views](real_uam.png)
 
 ---
 
@@ -53,11 +56,7 @@ The GUI app is currently in progress.
 
 ![System architecture](full_concept_map.png)
 
-## Components
-
-The three layers above, broken down node by node.
-
-### Perception
+## Perception
 
 | Node | Owner | Rate | Output |
 |---|---|---|---|
@@ -67,7 +66,7 @@ The three layers above, broken down node by node.
 | `vlm_client_node.py` | mine | on demand | Blocking service call |
 | `eagle2_5_node.py` | mine | ~4 s / query | Answer string |
 
-#### One query, end to end
+### One query, end to end
 
 <!-- ASSET 9: pair your terminal Q&A screenshot with the annotated detection
      frame from the SAME moment, stacked into one two-panel image. The objects
@@ -78,7 +77,8 @@ The three layers above, broken down node by node.
 
 YOLO detections given to the VLM:
 
-<div style="max-height: 300px; overflow-y: auto;">
+<details>
+<summary>Show detector JSON output (6 objects)</summary>
 
 ```json
 [
@@ -133,7 +133,7 @@ YOLO detections given to the VLM:
 ]
 ```
 
-</div>
+</details>
 
 **Eagle 2.5's answer:**
 
@@ -146,7 +146,7 @@ YOLO detections given to the VLM:
 >
 > The smallest graspable object is the cup (label 2), with a size of 0.095 meters in width, 0.1159 meters in height, and 0.02 meters in depth.
 
-#### Eagle 2.5 wrapper
+### Eagle 2.5 wrapper
 
 ![Eagle wrapper concept map](eagle/eagle_concept_map.png)
 
@@ -166,7 +166,7 @@ Eagle 2.5 is NVIDIA's VLM family built for embodied AI, so it handles multi-imag
 | `media_type` | `string` | `text` / `image` / `multi_image` / `video` |
 | `id` | `uint32` | Correlates response with request (optional) |
 
-#### ZED node
+### ZED node
 
 Provided by StereoLabs as part of the [ZED ROS wrapper](https://www.stereolabs.com/docs/ros/). The three important topics: 
 
@@ -176,7 +176,7 @@ Provided by StereoLabs as part of the [ZED ROS wrapper](https://www.stereolabs.c
 | `depth/depth_registered` | `sensor_msgs/Image` | Per-pixel depth, pixel-aligned to RGB |
 | `rgb/camera_info` | `sensor_msgs/CameraInfo` | Intrinsics |
 
-#### `detection_node.py`
+### `detection_node.py`
 
 ![Object detection concept map](object_detection/object_detection_concept_map.png)
 
@@ -192,7 +192,7 @@ YOLO26x produces 2D boxes on each RGB frame. Each box is lifted into 3D: sample 
 | `object_detection/image` | `sensor_msgs/Image` | Annotated frame, OpenCV-drawn |
 | `object_detection/markers` | `visualization_msgs/MarkerArray` | 3D boxes for RViz |
 
-#### `orchestrator_node.py`
+### `orchestrator_node.py`
 
 Holds the most recent scene state from `detections_json` and `scene`, waits on `vlm/question`, and on arrival assembles a prompt from the question plus current detections, publishing it on `vlm/request` alongside the frame the answer should be grounded in.
 
@@ -205,7 +205,7 @@ The prompt template:
 
 Scene state older than `[X]` ms is `[flagged / refused / used anyway with a warning]`.
 
-#### Design decisions
+### Design decisions
 
 **`vlm/answer` is published by the server, not the client.** Requests arrive two ways: via the `vlm/request` topic, or by calling `vlm/query` directly. Publishing from the server catches both. Publishing from the client would silently drop every direct service call.
 
@@ -218,6 +218,7 @@ Scene state older than `[X]` ms is `[flagged / refused / used anyway with a warn
 **Visualization topics are separate from data topics.** `object_detection/image` and `markers` cost bandwidth and only serve RViz, so nothing in the pipeline depends on them and both can be left unsubscribed in deployment.
 
 ---
+## Motion Planning 
 
 ### Behavior tree framework
 
